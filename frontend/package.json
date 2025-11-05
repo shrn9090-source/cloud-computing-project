@@ -1,0 +1,14 @@
+{
+  "name": "notes-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for note-taking app",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve -s . -l 3000",
+    "build": "echo 'No build step required for vanilla HTML/CSS/JS'",
+    "deploy": "netlify deploy --dir=."
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

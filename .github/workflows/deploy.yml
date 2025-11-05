@@ -1,0 +1,77 @@
+name: Deploy to Railway and Netlify
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      run: git clone https://github.com/${{ github.repository }}.git . && git checkout ${{ github.sha }}
+
+    - name: Setup Node.js
+      run: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+
+    - name: Install backend dependencies
+      run: cd backend && npm ci
+
+    - name: Run backend tests
+      run: cd backend && npm test
+
+  deploy-backend:
+    needs: test-backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      run: git clone https://github.com/${{ github.repository }}.git . && git checkout ${{ github.sha }}
+
+    - name: Install Railway CLI
+      run: npm install -g @railway/cli
+
+    - name: Deploy to Railway
+      run: |
+        cd backend
+        railway login --token ${{ secrets.RAILWAY_TOKEN }}
+        railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
+        railway up --detach
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      run: git clone https://github.com/${{ github.repository }}.git . && git checkout ${{ github.sha }}
+
+    - name: Setup Node.js
+      run: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+
+    - name: Install frontend dependencies
+      run: cd frontend && npm install
+
+    - name: Build frontend
+      run: cd frontend && npm run build
+
+    - name: Install Netlify CLI
+      run: npm install -g netlify-cli
+
+    - name: Deploy to Netlify
+      run: |
+        cd frontend
+        netlify deploy --dir=. --prod
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
